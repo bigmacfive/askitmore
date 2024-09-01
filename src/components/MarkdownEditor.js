@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const MarkdownEditor = () => {
-  const [markdown, setMarkdown] = useState('# Welcome to Askitmore\n\nStart typing your content here...\n\n- List item 1\n - Nested item 1\n - Nested item 2\n- List item 2');
+  const [markdown, setMarkdown] = useState(`# Welcome to askitmore
+Start typing your content here...`);
   const [showToast, setShowToast] = useState(false);
   const textareaRef = useRef(null);
   const previewRef = useRef(null);
@@ -28,13 +29,25 @@ const MarkdownEditor = () => {
       const indent = space.length;
       return `<li style="margin-left: ${indent * 20}px;">${content}</li>`;
     });
-    text = text.replace(/(<li.*<\/li>)/gim, '<ul>$1</ul>');
+    text = text.replace(/(<li.*<\/li>)/gim, '<ul style="padding-left: 20px;">$1</ul>');
 
     // Links
     text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>');
 
     // Highlight
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
+
+    // Tables
+    text = text.replace(/^\s*\|(.+)\|$/gim, (match, content) => {
+      const cells = content.split('|').map(cell => cell.trim());
+      const isHeader = cells.every(cell => /^---+$/.test(cell));
+      if (isHeader) {
+        return ''; // Skip header separator row
+      }
+      const cellType = match.trim().startsWith('|--') ? 'th' : 'td';
+      return `<tr>${cells.map(cell => `<${cellType}>${cell}</${cellType}>`).join('')}</tr>`;
+    });
+    text = text.replace(/(<tr>.*?<\/tr>)/gims, '<table border="1" style="border-collapse: collapse;">$1</table>');
 
     // Paragraphs
     text = text.replace(/^\s*(\n?[^\n]+\n?)\s*$/gim, '<p>$1</p>');
@@ -75,113 +88,6 @@ const MarkdownEditor = () => {
 
   return (
     <div className="markdown-container">
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap');
-
-          body {
-            background-color: #ffffff;
-            color: #000000;
-            font-family: 'IBM Plex Mono', monospace;
-            letter-spacing: -0.05em;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-          }
-
-          .markdown-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            max-width: 100%;
-            margin: 0 auto;
-          }
-
-          .markdown-editor, .markdown-preview {
-            flex: 1;
-            font-size: 16px;
-            line-height: 1.5;
-            padding: 20px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-          }
-
-          .markdown-editor {
-            resize: none;
-            outline: none;
-            border: none;
-            background-color: #ffffff;
-          }
-
-          .markdown-preview {
-            border-top: 1px solid #000000;
-          }
-
-          @media (min-width: 768px) {
-            .markdown-container {
-              flex-direction: row;
-            }
-            
-            .markdown-preview {
-              border-top: none;
-              border-left: 1px solid #000000;
-            }
-          }
-
-          .markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
-          .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
-            font-weight: 600;
-            margin-bottom: 0.5em;
-          }
-
-          .markdown-preview h1 { font-size: 2em; }
-          .markdown-preview h2 { font-size: 1.5em; }
-          .markdown-preview h3 { font-size: 1.3em; }
-          .markdown-preview h4 { font-size: 1.2em; }
-          .markdown-preview h5 { font-size: 1.1em; }
-          .markdown-preview h6 { font-size: 1em; }
-
-          .markdown-preview p { margin-bottom: 1em; }
-          .markdown-preview strong { font-weight: 600; }
-          .markdown-preview em { font-style: italic; }
-          .markdown-preview ul { list-style-type: disc; padding-left: 0; margin-bottom: 1em; }
-          .markdown-preview li { margin-bottom: 0.5em; }
-          .markdown-preview a { color: #000000; text-decoration: underline; }
-          .markdown-preview mark { background-color: #e0e0e0; padding: 0.2em 0; }
-
-          .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            border-radius: 30px;
-            background-color: #000000;
-            cursor: pointer;
-            transition: all 0.3s ease;
-          }
-
-          .fab:hover {
-            transform: scale(1.1);
-          }
-
-          .toast {
-            position: fixed;
-            bottom: 100px;
-            right: 30px;
-            background-color: #000000;
-            color: #ffffff;
-            padding: 10px 20px;
-            border-radius: 4px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-          }
-
-          .toast.show {
-            opacity: 1;
-          }
-        `}
-      </style>
       <textarea
         ref={textareaRef}
         className="markdown-editor"

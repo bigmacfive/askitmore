@@ -21,6 +21,58 @@ body {
   width: 100vw;
 }
 
+.markdown-container {
+  display: flex;
+  height: 100vh;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.markdown-editor, .markdown-preview {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.markdown-editor {
+  resize: none;
+  outline: none;
+  border: none;
+  background-color: #ffffff;
+}
+
+.markdown-preview {
+  border-left: 1px solid #000000;
+}
+
+.markdown-preview ul {
+  padding-left: 20px;
+  margin-bottom: 1em;
+}
+
+.markdown-preview li {
+  margin-bottom: 0.5em;
+}
+
+.markdown-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+.markdown-preview th, .markdown-preview td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.markdown-preview th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
 /* 스크롤바 스타일링 */
 ::-webkit-scrollbar {
   width: 8px;
@@ -37,4 +89,47 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.fab:hover {
+  transform: scale(1.1);
+}
+
+.toast {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .markdown-container {
+    flex-direction: column;
+  }
+  
+  .markdown-preview {
+    border-left: none;
+    border-top: 1px solid #000000;
+  }
 }
