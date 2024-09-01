@@ -4,6 +4,7 @@ const MarkdownEditor = () => {
   const [markdown, setMarkdown] = useState(`# Welcome to askitmore
 Start typing your content here...`);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const textareaRef = useRef(null);
   const previewRef = useRef(null);
 
@@ -38,16 +39,27 @@ Start typing your content here...`);
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
 
     // Tables
-    text = text.replace(/^\s*\|(.+)\|$/gim, (match, content) => {
-      const cells = content.split('|').map(cell => cell.trim());
-      const isHeader = cells.every(cell => /^---+$/.test(cell));
-      if (isHeader) {
-        return ''; // Skip header separator row
-      }
-      const cellType = match.trim().startsWith('|--') ? 'th' : 'td';
-      return `<tr>${cells.map(cell => `<${cellType}>${cell}</${cellType}>`).join('')}</tr>`;
-    });
-    text = text.replace(/(<tr>.*?<\/tr>)/gims, '<table border="1" style="border-collapse: collapse;">$1</table>');
+    const tableRegex = /^\|(.+)\|$/gm;
+    const tables = text.match(/^\|(.+)\|$(\n^\|(.+)\|$)+/gm);
+    
+    if (tables) {
+      tables.forEach(table => {
+        const rows = table.split('\n');
+        let htmlTable = '<table border="1" style="border-collapse: collapse;">';
+        
+        rows.forEach((row, index) => {
+          const cells = row.split('|').filter(cell => cell.trim() !== '');
+          const cellType = index === 1 ? 'th' : 'td';
+          
+          if (index !== 1 || !cells.every(cell => /^---+$/.test(cell.trim()))) {
+            htmlTable += `<tr>${cells.map(cell => `<${cellType}>${cell.trim()}</${cellType}>`).join('')}</tr>`;
+          }
+        });
+        
+        htmlTable += '</table>';
+        text = text.replace(table, htmlTable);
+      });
+    }
 
     // Paragraphs
     text = text.replace(/^\s*(\n?[^\n]+\n?)\s*$/gim, '<p>$1</p>');
@@ -57,6 +69,23 @@ Start typing your content here...`);
 
   const handleInput = (e) => {
     setMarkdown(e.target.value);
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const lines = pastedText.split('\n');
+    
+    if (lines.length > 1 && lines[0].includes('\t')) {
+      // This looks like a table, convert to markdown
+      const markdownTable = lines.map(line => `| ${line.split('\t').join(' | ')} |`).join('\n');
+      const newMarkdown = markdown.slice(0, e.target.selectionStart) + markdownTable + markdown.slice(e.target.selectionEnd);
+      setMarkdown(newMarkdown);
+    } else {
+      // Not a table, insert as plain text
+      const newMarkdown = markdown.slice(0, e.target.selectionStart) + pastedText + markdown.slice(e.target.selectionEnd);
+      setMarkdown(newMarkdown);
+    }
   };
 
   const handleScroll = (e) => {
@@ -70,6 +99,13 @@ Start typing your content here...`);
     }
   };
 
+  const clearContent = () => {
+    setMarkdown('');
+    setToastMessage('rm -rf');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
   useEffect(() => {
     if (previewRef.current && markdown) {
       const renderedHTML = parseMarkdown(markdown);
@@ -79,6 +115,7 @@ Start typing your content here...`);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(markdown).then(() => {
+      setToastMessage('Copied!');
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     }).catch(err => {
@@ -88,11 +125,15 @@ Start typing your content here...`);
 
   return (
     <div className="markdown-container">
+      <div className="editor-header">
+        <button onClick={clearContent} className="clear-button">Clear</button>
+      </div>
       <textarea
         ref={textareaRef}
         className="markdown-editor"
         value={markdown}
         onChange={handleInput}
+        onPaste={handlePaste}
         onScroll={handleScroll}
         placeholder="Type your markdown here..."
       />
@@ -106,7 +147,7 @@ Start typing your content here...`);
         title="Copy to Clipboard"
       />
       <div className={`toast ${showToast ? 'show' : ''}`}>
-        Copied!
+        {toastMessage}
       </div>
     </div>
   );
