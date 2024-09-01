@@ -57,6 +57,9 @@ Start typing your content here...`);
     // Highlight
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
 
+    // Images
+    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, '<img src="$2" alt="$1" style="max-width: 100%;">');
+
     // Tables
     const tableRegex = /^\|(.+)\|$/gm;
     const tables = text.match(/^\|(.+)\|$(\n^\|(.+)\|$)+/gm);
@@ -91,18 +94,33 @@ Start typing your content here...`);
   };
 
   const handlePaste = (e) => {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData('text');
-    const lines = pastedText.split('\n');
-    
-    if (lines.length > 1 && lines[0].includes('\t')) {
-      // This looks like a table, convert to markdown
+    const clipboardData = e.clipboardData;
+    const pastedData = clipboardData.getData('text');
+
+    // Check if pasted content is an image
+    const items = clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        e.preventDefault();
+        const blob = items[i].getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const base64Data = event.target.result;
+          const imageMarkdown = `![pasted image](${base64Data})`;
+          const newMarkdown = markdown.slice(0, e.target.selectionStart) + imageMarkdown + markdown.slice(e.target.selectionEnd);
+          setMarkdown(newMarkdown);
+        };
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
+
+    // If not an image, handle as before
+    if (pastedData.includes('\t')) {
+      e.preventDefault();
+      const lines = pastedData.split('\n');
       const markdownTable = lines.map(line => `| ${line.split('\t').join(' | ')} |`).join('\n');
       const newMarkdown = markdown.slice(0, e.target.selectionStart) + markdownTable + markdown.slice(e.target.selectionEnd);
-      setMarkdown(newMarkdown);
-    } else {
-      // Not a table, insert as plain text
-      const newMarkdown = markdown.slice(0, e.target.selectionStart) + pastedText + markdown.slice(e.target.selectionEnd);
       setMarkdown(newMarkdown);
     }
   };
@@ -135,10 +153,6 @@ Start typing your content here...`);
       
       const pdf = new jsPDF('p', 'pt', 'a4');
       
-      // Add custom font
-      pdf.addFont('https://cdn.jsdelivr.net/npm/nanum-gothic-coding@1.0.1/nanum-gothic-coding.ttf', 'NanumGothicCoding', 'normal');
-      pdf.setFont('NanumGothicCoding');
-      
       pdf.html(sanitizedContent, {
         callback: function (pdf) {
           pdf.save("markdown_content.pdf");
@@ -147,13 +161,6 @@ Start typing your content here...`);
         y: 10,
         width: 595.28, // A4 width in points
         windowWidth: 1000,
-        fontFaces: [
-          {
-            family: 'NanumGothicCoding',
-            style: 'normal',
-            weight: 'normal'
-          }
-        ],
         html2canvas: {
           scale: 0.7,
           useCORS: true,
@@ -165,7 +172,6 @@ Start typing your content here...`);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
   };
-
 
   useEffect(() => {
     if (previewRef.current && markdown) {
