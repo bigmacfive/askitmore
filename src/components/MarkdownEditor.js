@@ -101,7 +101,27 @@ Start typing your content here...`);
 
   const clearContent = () => {
     setMarkdown('');
+    if (previewRef.current) {
+      previewRef.current.innerHTML = '';
+    }
     setToastMessage('rm -rf');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
+  const saveToPDF = () => {
+    if (previewRef.current) {
+      html2canvas(previewRef.current).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF();
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save("markdown_content.pdf");
+      });
+    }
+    setToastMessage('Saved to PDF');
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
   };
@@ -127,6 +147,7 @@ Start typing your content here...`);
     <div className="markdown-container">
       <div className="editor-header">
         <button onClick={clearContent} className="clear-button">Clear</button>
+        <button onClick={saveToPDF} className="save-button">Save</button>
       </div>
       <textarea
         ref={textareaRef}
