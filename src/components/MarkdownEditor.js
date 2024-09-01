@@ -133,7 +133,11 @@ Start typing your content here...`);
       const content = parseMarkdown(markdown);
       const sanitizedContent = DOMPurify.sanitize(content);
       
-      const pdf = new jsPDF();
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      
+      // Add custom font
+      pdf.addFont('https://cdn.jsdelivr.net/npm/nanum-gothic-coding@1.0.1/nanum-gothic-coding.ttf', 'NanumGothicCoding', 'normal');
+      pdf.setFont('NanumGothicCoding');
       
       pdf.html(sanitizedContent, {
         callback: function (pdf) {
@@ -141,14 +145,27 @@ Start typing your content here...`);
         },
         x: 10,
         y: 10,
-        width: 190, // slightly less than A4 width
-        windowWidth: 675 // Experiment with this value
+        width: 595.28, // A4 width in points
+        windowWidth: 1000,
+        fontFaces: [
+          {
+            family: 'NanumGothicCoding',
+            style: 'normal',
+            weight: 'normal'
+          }
+        ],
+        html2canvas: {
+          scale: 0.7,
+          useCORS: true,
+          logging: true,
+        }
       });
     }
     setToastMessage('Saved to PDF');
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
   };
+
 
   useEffect(() => {
     if (previewRef.current && markdown) {
