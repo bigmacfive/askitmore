@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { jsPDF } from "jspdf";
-import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
+import DOMPurify from 'dompurify';
 
 const MarkdownEditor = () => {
-  const [markdown, setMarkdown] = useState('# Welcome to askitmore\nStart typing your content here...');
+  const [markdown, setMarkdown] = useState(`# Welcome to askitmore
+Start typing your content here...`);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -57,7 +59,10 @@ const MarkdownEditor = () => {
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
 
     // Images
-    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
+    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, (match, alt, src) => {
+      const imgSrc = src.startsWith('data:') ? src : `${src}`;
+      return `<img src="${imgSrc}" alt="${alt}" style="max-width: 100%; height: auto;">`;
+    });
 
     // Tables
     const tableRegex = /^\|(.+)\|$/gm;
@@ -93,37 +98,34 @@ const MarkdownEditor = () => {
   };
 
   const handlePaste = (e) => {
-    e.preventDefault();
-    const clipboardData = e.clipboardData || window.clipboardData;
-    const pastedData = clipboardData.getData('text');
+    const clipboardData = e.clipboardData;
+    const items = clipboardData.items;
 
-    if (clipboardData.types.includes('Files')) {
-      const file = clipboardData.files[0];
-      if (file.type.startsWith('image/')) {
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        e.preventDefault();
+        const blob = items[i].getAsFile();
         const reader = new FileReader();
         reader.onload = function(event) {
           const base64Data = event.target.result;
           const imageMarkdown = `![](${base64Data})`;
-          insertText(imageMarkdown);
+          const newMarkdown = markdown.slice(0, e.target.selectionStart) + imageMarkdown + markdown.slice(e.target.selectionEnd);
+          setMarkdown(newMarkdown);
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(blob);
+        return;
       }
-    } else {
-      insertText(pastedData);
     }
-  };
 
-  const insertText = (text) => {
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentValue = textarea.value;
-    const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
-    setMarkdown(newValue);
-    textarea.focus();
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
-    }, 0);
+    // Table paste logic
+    const pastedData = clipboardData.getData('text');
+    if (pastedData.includes('\t')) {
+      e.preventDefault();
+      const lines = pastedData.split('\n');
+      const markdownTable = lines.map(line => `| ${line.split('\t').join(' | ')} |`).join('\n');
+      const newMarkdown = markdown.slice(0, e.target.selectionStart) + markdownTable + markdown.slice(e.target.selectionEnd);
+      setMarkdown(newMarkdown);
+    }
   };
 
   const handleScroll = (e) => {
@@ -150,49 +152,22 @@ const MarkdownEditor = () => {
   const saveToPDF = () => {
     if (previewRef.current) {
       const content = previewRef.current;
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'a4'
+      
+      html2canvas(content, {
+        scale: 1,
+        useCORS: true,
+        logging: true
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save("markdown_content.pdf");
       });
-
-      const margins = {
-        top: 40,
-        bottom: 60,
-        left: 40,
-        width: 522
-      };
-
-      pdf.setFont('helvetica');
-      pdf.setFontSize(12);
-
-      const lines = pdf.splitTextToSize(content.innerText, margins.width);
-
-      let startY = margins.top;
-      for (let i = 0; i < lines.length; i++) {
-        if (startY > pdf.internal.pageSize.height - margins.bottom) {
-          pdf.addPage();
-          startY = margins.top;
-        }
-        pdf.text(margins.left, startY, lines[i]);
-        startY += 14;
-      }
-
-      // Handle images
-      const images = content.getElementsByTagName('img');
-      for (let i = 0; i < images.length; i++) {
-        if (startY > pdf.internal.pageSize.height - margins.bottom) {
-          pdf.addPage();
-          startY = margins.top;
-        }
-        const img = images[i];
-        const imgWidth = Math.min(img.width, margins.width);
-        const imgHeight = img.height * (imgWidth / img.width);
-        pdf.addImage(img.src, 'PNG', margins.left, startY, imgWidth, imgHeight);
-        startY += imgHeight + 10;
-      }
-
-      pdf.save("askitmore_document.pdf");
     }
     setToastMessage('Saved to PDF');
     setShowToast(true);
@@ -202,7 +177,7 @@ const MarkdownEditor = () => {
   useEffect(() => {
     if (previewRef.current && markdown) {
       const renderedHTML = parseMarkdown(markdown);
-      previewRef.current.innerHTML = renderedHTML;
+      previewRef.current.innerHTML = DOMPurify.sanitize(renderedHTML);
     }
   }, [markdown]);
 
@@ -218,6 +193,10 @@ const MarkdownEditor = () => {
 
   return (
     <div className="markdown-container">
+      <div className="editor-header">
+        <button onClick={clearContent} className="clear-button">Clear</button>
+        <button onClick={saveToPDF} className="save-button">Save</button>
+      </div>
       <textarea
         ref={textareaRef}
         className="markdown-editor"
