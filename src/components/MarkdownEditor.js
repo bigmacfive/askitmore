@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { jsPDF } from "jspdf";
+import html2canvas from 'html2canvas';
 import DOMPurify from 'dompurify';
 
 const MarkdownEditor = () => {
@@ -58,7 +59,10 @@ Start typing your content here...`);
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
 
     // Images
-    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, '<img src="$2" alt="$1" style="max-width: 100%;">');
+    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, (match, alt, src) => {
+      const imgSrc = src.startsWith('data:') ? src : `${src}`;
+      return `<img src="${imgSrc}" alt="${alt}" style="max-width: 100%; height: auto;">`;
+    });
 
     // Tables
     const tableRegex = /^\|(.+)\|$/gm;
@@ -95,10 +99,8 @@ Start typing your content here...`);
 
   const handlePaste = (e) => {
     const clipboardData = e.clipboardData;
-    const pastedData = clipboardData.getData('text');
-
-    // Check if pasted content is an image
     const items = clipboardData.items;
+
     for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf("image") !== -1) {
         e.preventDefault();
@@ -106,7 +108,7 @@ Start typing your content here...`);
         const reader = new FileReader();
         reader.onload = function(event) {
           const base64Data = event.target.result;
-          const imageMarkdown = `![pasted image](${base64Data})`;
+          const imageMarkdown = `![](${base64Data})`;
           const newMarkdown = markdown.slice(0, e.target.selectionStart) + imageMarkdown + markdown.slice(e.target.selectionEnd);
           setMarkdown(newMarkdown);
         };
@@ -115,7 +117,8 @@ Start typing your content here...`);
       }
     }
 
-    // If not an image, handle as before
+    // Table paste logic
+    const pastedData = clipboardData.getData('text');
     if (pastedData.includes('\t')) {
       e.preventDefault();
       const lines = pastedData.split('\n');
@@ -148,24 +151,22 @@ Start typing your content here...`);
 
   const saveToPDF = () => {
     if (previewRef.current) {
-      const content = parseMarkdown(markdown);
-      const sanitizedContent = DOMPurify.sanitize(content);
+      const content = previewRef.current;
       
-      const pdf = new jsPDF('p', 'pt', 'a4');
-      
-      pdf.html(sanitizedContent, {
-        callback: function (pdf) {
-          pdf.save("markdown_content.pdf");
-        },
-        x: 10,
-        y: 10,
-        width: 595.28, // A4 width in points
-        windowWidth: 1000,
-        html2canvas: {
-          scale: 0.7,
-          useCORS: true,
-          logging: true,
-        }
+      html2canvas(content, {
+        scale: 1,
+        useCORS: true,
+        logging: true
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save("markdown_content.pdf");
       });
     }
     setToastMessage('Saved to PDF');
@@ -176,7 +177,7 @@ Start typing your content here...`);
   useEffect(() => {
     if (previewRef.current && markdown) {
       const renderedHTML = parseMarkdown(markdown);
-      previewRef.current.innerHTML = renderedHTML;
+      previewRef.current.innerHTML = DOMPurify.sanitize(renderedHTML);
     }
   }, [markdown]);
 

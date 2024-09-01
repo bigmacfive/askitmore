@@ -46,6 +46,9 @@ body {
 
 .markdown-preview {
   border-left: 1px solid #000000;
+  max-width: 800px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .editor-header {
@@ -83,33 +86,65 @@ body {
   background-color: #45a049;
 }
 
-.markdown-preview ul {
-  padding-left: 20px;
-  margin-bottom: 1em;
+.fab {
+  position: fixed;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.markdown-preview li {
+.fab:hover {
+  transform: scale(1.1);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+/* Markdown Preview Styles */
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
+.markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
+  margin-top: 1em;
   margin-bottom: 0.5em;
 }
 
-.markdown-preview table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 1em;
-}
+.markdown-preview h1 { font-size: 2em; }
+.markdown-preview h2 { font-size: 1.5em; }
+.markdown-preview h3 { font-size: 1.3em; }
+.markdown-preview h4 { font-size: 1.2em; }
+.markdown-preview h5 { font-size: 1.1em; }
+.markdown-preview h6 { font-size: 1em; }
 
-.markdown-preview th, .markdown-preview td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
+.markdown-preview p { margin-bottom: 1em; }
+.markdown-preview strong { font-weight: 600; }
+.markdown-preview em { font-style: italic; }
+.markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 1em; }
+.markdown-preview li { margin-bottom: 0.5em; }
+.markdown-preview a { color: #0000FF; text-decoration: underline; }
+.markdown-preview img { max-width: 100%; height: auto; }
+.markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+.markdown-preview th, .markdown-preview td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+.markdown-preview th { background-color: #f2f2f2; }
 
-.markdown-preview th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-/* 스크롤바 스타일링 */
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -127,38 +162,6 @@ body {
   background: #555;
 }
 
-.fab {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 30px;
-  background-color: #000000;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.fab:hover {
-  transform: scale(1.1);
-}
-
-.toast {
-  position: fixed;
-  bottom: 100px;
-  right: 30px;
-  background-color: #000000;
-  color: #ffffff;
-  padding: 10px 20px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.toast.show {
-  opacity: 1;
-}
-
 @media (max-width: 768px) {
   .markdown-container {
     flex-direction: column;
@@ -167,5 +170,6 @@ body {
   .markdown-preview {
     border-left: none;
     border-top: 1px solid #000000;
+    width: 100%;
   }
 }
