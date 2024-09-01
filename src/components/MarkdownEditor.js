@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { jsPDF } from "jspdf";
 import html2canvas from 'html2canvas';
-import DOMPurify from 'dompurify';
 
 const MarkdownEditor = () => {
-  const [markdown, setMarkdown] = useState(`# Welcome to askitmore
-Start typing your content here...`);
+  const [markdown, setMarkdown] = useState('# Welcome to askitmore\nStart typing your content here...');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -58,10 +56,17 @@ Start typing your content here...`);
     // Highlight
     text = text.replace(/==(.*)==/gim, '<mark>$1</mark>');
 
-    // Images
-    text = text.replace(/!\[([^\]]*)\]\(([^\)]+)\)/gim, (match, alt, src) => {
-      const imgSrc = src.startsWith('data:') ? src : `${src}`;
-      return `<img src="${imgSrc}" alt="${alt}" style="max-width: 100%; height: auto;">`;
+    // Images with toggle
+    text = text.replace(/!\[([^\]]*)\]\(data:image\/[^;]+;base64,([^\)]+)\)/gim, (match, alt, base64) => {
+      const shortBase64 = base64.substring(0, 20) + '...';
+      return `
+        <div class="image-toggle">
+          <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden'); this.textContent = this.textContent === 'Show Image' ? 'Hide Image' : 'Show Image';">Show Image</button>
+          <div class="image-container hidden">
+            <img src="data:image/png;base64,${base64}" alt="${alt}" style="max-width: 100%;">
+          </div>
+        </div>
+      `;
     });
 
     // Tables
@@ -98,34 +103,37 @@ Start typing your content here...`);
   };
 
   const handlePaste = (e) => {
-    const clipboardData = e.clipboardData;
-    const items = clipboardData.items;
+    e.preventDefault();
+    const clipboardData = e.clipboardData || window.clipboardData;
+    const pastedData = clipboardData.getData('text');
 
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf("image") !== -1) {
-        e.preventDefault();
-        const blob = items[i].getAsFile();
+    if (clipboardData.types.includes('Files')) {
+      const file = clipboardData.files[0];
+      if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function(event) {
           const base64Data = event.target.result;
           const imageMarkdown = `![](${base64Data})`;
-          const newMarkdown = markdown.slice(0, e.target.selectionStart) + imageMarkdown + markdown.slice(e.target.selectionEnd);
-          setMarkdown(newMarkdown);
+          insertText(imageMarkdown);
         };
-        reader.readAsDataURL(blob);
-        return;
+        reader.readAsDataURL(file);
       }
+    } else {
+      insertText(pastedData);
     }
+  };
 
-    // Table paste logic
-    const pastedData = clipboardData.getData('text');
-    if (pastedData.includes('\t')) {
-      e.preventDefault();
-      const lines = pastedData.split('\n');
-      const markdownTable = lines.map(line => `| ${line.split('\t').join(' | ')} |`).join('\n');
-      const newMarkdown = markdown.slice(0, e.target.selectionStart) + markdownTable + markdown.slice(e.target.selectionEnd);
-      setMarkdown(newMarkdown);
-    }
+  const insertText = (text) => {
+    const textarea = textareaRef.current;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = textarea.value;
+    const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+    setMarkdown(newValue);
+    textarea.focus();
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    }, 0);
   };
 
   const handleScroll = (e) => {
@@ -177,7 +185,16 @@ Start typing your content here...`);
   useEffect(() => {
     if (previewRef.current && markdown) {
       const renderedHTML = parseMarkdown(markdown);
-      previewRef.current.innerHTML = DOMPurify.sanitize(renderedHTML);
+      previewRef.current.innerHTML = renderedHTML;
+
+      // Add event listeners to toggle buttons
+      const toggleButtons = previewRef.current.querySelectorAll('.toggle-btn');
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          this.nextElementSibling.classList.toggle('hidden');
+          this.textContent = this.textContent === 'Show Image' ? 'Hide Image' : 'Show Image';
+        });
+      });
     }
   }, [markdown]);
 
@@ -193,10 +210,6 @@ Start typing your content here...`);
 
   return (
     <div className="markdown-container">
-      <div className="editor-header">
-        <button onClick={clearContent} className="clear-button">Clear</button>
-        <button onClick={saveToPDF} className="save-button">Save</button>
-      </div>
       <textarea
         ref={textareaRef}
         className="markdown-editor"
