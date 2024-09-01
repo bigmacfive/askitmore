@@ -35,7 +35,6 @@ body {
   line-height: 1.5;
   padding: 20px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .markdown-editor {
@@ -52,41 +51,39 @@ body {
   box-sizing: border-box;
 }
 
-.markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
-.markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
-  font-weight: 600;
-  margin-bottom: 0.5em;
+.editor-header {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
 }
 
-.markdown-preview h1 { font-size: 2em; }
-.markdown-preview h2 { font-size: 1.5em; }
-.markdown-preview h3 { font-size: 1.3em; }
-.markdown-preview h4 { font-size: 1.2em; }
-.markdown-preview h5 { font-size: 1.1em; }
-.markdown-preview h6 { font-size: 1em; }
-
-.markdown-preview p { margin-bottom: 1em; }
-.markdown-preview strong { font-weight: 600; }
-.markdown-preview em { font-style: italic; }
-.markdown-preview ul { list-style-type: disc; padding-left: 2em; margin-bottom: 1em; }
-.markdown-preview li { margin-bottom: 0.5em; }
-.markdown-preview a { color: #0000FF; text-decoration: underline; }
-.markdown-preview mark { background-color: #e0e0e0; padding: 0.2em 0; }
-
-.markdown-preview table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 1em;
+.clear-button, .save-button {
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
 }
 
-.markdown-preview th, .markdown-preview td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
+.clear-button {
+  background-color: #f44336;
 }
 
-.markdown-preview th {
-  background-color: #f2f2f2;
+.clear-button:hover {
+  background-color: #d32f2f;
+}
+
+.save-button {
+  background-color: #4CAF50;
+}
+
+.save-button:hover {
+  background-color: #45a049;
 }
 
 .fab {
@@ -122,26 +119,30 @@ body {
   opacity: 1;
 }
 
-.image-toggle {
-  margin-bottom: 1em;
+/* Markdown Preview Styles */
+.markdown-preview h1, .markdown-preview h2, .markdown-preview h3,
+.markdown-preview h4, .markdown-preview h5, .markdown-preview h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
 }
 
-.toggle-btn {
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 14px;
-}
+.markdown-preview h1 { font-size: 2em; }
+.markdown-preview h2 { font-size: 1.5em; }
+.markdown-preview h3 { font-size: 1.3em; }
+.markdown-preview h4 { font-size: 1.2em; }
+.markdown-preview h5 { font-size: 1.1em; }
+.markdown-preview h6 { font-size: 1em; }
 
-.image-container {
-  margin-top: 10px;
-}
-
-.hidden {
-  display: none;
-}
+.markdown-preview p { margin-bottom: 1em; }
+.markdown-preview strong { font-weight: 600; }
+.markdown-preview em { font-style: italic; }
+.markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 1em; }
+.markdown-preview li { margin-bottom: 0.5em; }
+.markdown-preview a { color: #0000FF; text-decoration: underline; }
+.markdown-preview img { max-width: 100%; height: auto; }
+.markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+.markdown-preview th, .markdown-preview td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+.markdown-preview th { background-color: #f2f2f2; }
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
