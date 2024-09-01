@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { jsPDF } from "jspdf";
-import html2canvas from 'html2canvas';
+import DOMPurify from 'dompurify';
 
 const MarkdownEditor = () => {
   const [markdown, setMarkdown] = useState(`# Welcome to askitmore
@@ -44,12 +44,12 @@ Start typing your content here...`);
     // Italic
     text = text.replace(/\*(.*)\*/gim, '<em>$1</em>');
 
-    // Nested Lists
+    // Lists
     text = text.replace(/^(\s*)-\s(.*$)/gim, (match, space, content) => {
       const indent = space.length;
       return `<li style="margin-left: ${indent * 20}px;">${content}</li>`;
     });
-    text = text.replace(/(<li.*<\/li>)/gim, '<ul style="padding-left: 20px;">$1</ul>');
+    text = text.replace(/(<li.*<\/li>)/gim, '<ul>$1</ul>');
 
     // Links
     text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/gim, '<a href="$2">$1</a>');
@@ -64,7 +64,7 @@ Start typing your content here...`);
     if (tables) {
       tables.forEach(table => {
         const rows = table.split('\n');
-        let htmlTable = '<table border="1" style="border-collapse: collapse;">';
+        let htmlTable = '<table>';
         
         rows.forEach((row, index) => {
           const cells = row.split('|').filter(cell => cell.trim() !== '');
@@ -130,14 +130,19 @@ Start typing your content here...`);
 
   const saveToPDF = () => {
     if (previewRef.current) {
-      html2canvas(previewRef.current).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF();
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save("markdown_content.pdf");
+      const content = parseMarkdown(markdown);
+      const sanitizedContent = DOMPurify.sanitize(content);
+      
+      const pdf = new jsPDF();
+      
+      pdf.html(sanitizedContent, {
+        callback: function (pdf) {
+          pdf.save("markdown_content.pdf");
+        },
+        x: 10,
+        y: 10,
+        width: 190, // slightly less than A4 width
+        windowWidth: 675 // Experiment with this value
       });
     }
     setToastMessage('Saved to PDF');
