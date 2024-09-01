@@ -7,8 +7,25 @@ const MarkdownEditor = () => {
 Start typing your content here...`);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const textareaRef = useRef(null);
   const previewRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerHeight < window.outerHeight) {
+        setKeyboardHeight(window.outerHeight - window.innerHeight);
+      } else {
+        setKeyboardHeight(0);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const parseMarkdown = (text) => {
     if (typeof text !== 'string') return '';
@@ -168,6 +185,7 @@ Start typing your content here...`);
         className="fab"
         onClick={copyToClipboard} 
         title="Copy to Clipboard"
+        style={{ bottom: `${30 + keyboardHeight}px` }}
       />
       <div className={`toast ${showToast ? 'show' : ''}`}>
         {toastMessage}
