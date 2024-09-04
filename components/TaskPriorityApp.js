@@ -33,37 +33,45 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
   const [content, setContent] = useState(task.content);
   const [isDropping, setIsDropping] = useState(false);
   const postItRef = useRef(null);
+  const dragOffset = useRef({ x: 0, y: 0 });
 
   const handleDragStart = (e) => {
     const rect = e.target.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-    e.dataTransfer.setData('text/plain', JSON.stringify({ ...task, offsetX, offsetY }));
+    dragOffset.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+    e.dataTransfer.setData('text/plain', JSON.stringify(task));
     if (e.target.releaseCapture) {
       e.target.releaseCapture();
     }
   };
 
-  const handleEdit = () => {
-    onEdit(task.id, content);
-    setIsEditing(false);
-  };
-
   const handleTouchStart = (e) => {
     const touch = e.touches[0];
     const rect = postItRef.current.getBoundingClientRect();
-    const offsetX = touch.clientX - rect.left;
-    const offsetY = touch.clientY - rect.top;
-    postItRef.current.setAttribute('data-offset-x', offsetX);
-    postItRef.current.setAttribute('data-offset-y', offsetY);
+    dragOffset.current = {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    };
   };
 
   const handleTouchMove = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    const offsetX = parseInt(postItRef.current.getAttribute('data-offset-x'));
-    const offsetY = parseInt(postItRef.current.getAttribute('data-offset-y'));
-    onDrag({ clientX: touch.clientX - offsetX, clientY: touch.clientY - offsetY, preventDefault: () => {} }, task.id);
+    const newX = touch.clientX - dragOffset.current.x;
+    const newY = touch.clientY - dragOffset.current.y;
+    onDrag(newX, newY, task.id);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDropping(true);
+    setTimeout(() => setIsDropping(false), 300);
+  };
+
+  const handleEdit = () => {
+    onEdit(task.id, content);
+    setIsEditing(false);
   };
 
   const handleContentClick = () => {
@@ -72,13 +80,6 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
     }
     setIsEditing(true);
   };
-
-  useEffect(() => {
-    if (isDropping) {
-      const timer = setTimeout(() => setIsDropping(false), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isDropping]);
 
   return (
     <div
@@ -94,7 +95,7 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
       onDragStart={handleDragStart}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
-      onTransitionEnd={() => setIsDropping(false)}
+      onTouchEnd={handleTouchEnd}
     >
       <button onClick={() => onDelete(task.id)} className="self-end">
         <X size={16} />
@@ -136,14 +137,12 @@ const TaskPriorityApp = () => {
     setTasks([...tasks, newTask]);
   };
 
-  const handleDrag = (e, id) => {
-    e.preventDefault();
+  const handleDrag = (clientX, clientY, id) => {
     const canvas = canvasRef.current.getBoundingClientRect();
-    const data = JSON.parse(e.dataTransfer.getData('text'));
-    const x = Math.max(0, Math.min(e.clientX - canvas.left - data.offsetX, canvas.width - 128));
-    const y = Math.max(0, Math.min(e.clientY - canvas.top - data.offsetY, canvas.height - 128));
+    const x = Math.max(0, Math.min(clientX - canvas.left, canvas.width - 128));
+    const y = Math.max(0, Math.min(clientY - canvas.top, canvas.height - 128));
     setTasks(tasks.map(task => 
-      task.id === id ? { ...task, x, y, isDropping: true } : task
+      task.id === id ? { ...task, x, y } : task
     ));
   };
 
@@ -178,7 +177,7 @@ const TaskPriorityApp = () => {
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const data = JSON.parse(e.dataTransfer.getData('text'));
-          handleDrag(e, data.id);
+          handleDrag(e.clientX, e.clientY, data.id);
         }}
       >
         {/* X and Y axes */}
