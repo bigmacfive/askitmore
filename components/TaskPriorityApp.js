@@ -28,7 +28,7 @@ const colors = [
   '#fab1a0', '#81ecec', '#ffeaa7', '#dfe6e9', '#00cec9'
 ];
 
-const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
+const PostIt = ({ task, onDrag, onDelete, onEdit, onDragStart, onDragEnd }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(task.content);
   const [isDropping, setIsDropping] = useState(false);
@@ -45,6 +45,7 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
     if (e.target.releaseCapture) {
       e.target.releaseCapture();
     }
+    onDragStart();
   };
 
   const handleTouchStart = (e) => {
@@ -54,6 +55,7 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
       x: touch.clientX - rect.left,
       y: touch.clientY - rect.top
     };
+    onDragStart();
   };
 
   const handleTouchMove = (e) => {
@@ -67,6 +69,7 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
   const handleTouchEnd = () => {
     setIsDropping(true);
     setTimeout(() => setIsDropping(false), 300);
+    onDragEnd();
   };
 
   const handleEdit = () => {
@@ -93,6 +96,7 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
       }}
       draggable="true"
       onDragStart={handleDragStart}
+      onDragEnd={onDragEnd}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -118,7 +122,24 @@ const PostIt = ({ task, onDrag, onDelete, onEdit }) => {
 
 const TaskPriorityApp = () => {
   const [tasks, setTasks] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
   const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const preventDefault = (e) => {
+      if (isDragging) {
+        e.preventDefault();
+      }
+    };
+
+    document.body.style.overflow = isDragging ? 'hidden' : 'auto';
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.removeEventListener('touchmove', preventDefault);
+    };
+  }, [isDragging]);
 
   const addTask = () => {
     const canvas = canvasRef.current.getBoundingClientRect();
@@ -160,6 +181,14 @@ const TaskPriorityApp = () => {
     setTasks([]);
   };
 
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div className="p-4 mx-auto" style={{ maxWidth: '740px' }}>
       <div className="flex gap-4 mb-4">
@@ -173,11 +202,12 @@ const TaskPriorityApp = () => {
       <div 
         ref={canvasRef}
         className="relative w-full aspect-square border border-gray-300"
-        style={{ maxWidth: '740px', maxHeight: '740px' }}
+        style={{ maxWidth: '740px', maxHeight: '740px', touchAction: 'none' }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           const data = JSON.parse(e.dataTransfer.getData('text'));
           handleDrag(e.clientX, e.clientY, data.id);
+          handleDragEnd();
         }}
       >
         {/* X and Y axes */}
@@ -203,6 +233,8 @@ const TaskPriorityApp = () => {
             onDrag={handleDrag}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           />
         ))}
       </div>
