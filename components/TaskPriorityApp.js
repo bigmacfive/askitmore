@@ -4,7 +4,7 @@ import { PlusCircle, X, Trash2 } from 'lucide-react';
 const Button = ({ children, onClick, variant }) => (
   <button
     onClick={onClick}
-    className={`px-4 py-2 rounded ${
+    className={`px-3 py-1 rounded flex items-center ${
       variant === 'destructive' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
     }`}
   >
@@ -165,10 +165,10 @@ const TaskPriorityApp = () => {
     <div className="p-4 mx-auto" style={{ maxWidth: '740px' }}>
       <div className="flex gap-4 mb-4">
         <Button onClick={addTask}>
-          <PlusCircle className="mr-2 h-4 w-4" /> 업무 추가
+          <PlusCircle className="mr-2 h-4 w-4" /> <span>업무 추가</span>
         </Button>
         <Button onClick={clearAllTasks} variant="destructive">
-          <Trash2 className="mr-2 h-4 w-4" /> 전체 삭제
+          <Trash2 className="mr-2 h-4 w-4" /> <span>전체 삭제</span>
         </Button>
       </div>
       <div 
