@@ -1,7 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlusCircle, X, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
+const Button = ({ children, onClick, variant }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2 rounded ${
+      variant === 'destructive' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
+    }`}
+  >
+    {children}
+  </button>
+);
+
+const Input = ({ value, onChange, onBlur, autoFocus }) => (
+  <input
+    type="text"
+    value={value}
+    onChange={onChange}
+    onBlur={onBlur}
+    autoFocus={autoFocus}
+    className="border border-gray-300 rounded px-2 py-1 w-full"
+  />
+);
 
 const colors = [
   '#ffeb3b', '#ff9ff3', '#55efc4', '#74b9ff', '#a29bfe', 
@@ -140,32 +160,6 @@ const TaskPriorityApp = () => {
   const clearAllTasks = () => {
     setTasks([]);
   };
-
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @font-face {
-        font-family: 'Pretendard-Regular';
-        src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
-        font-weight: 400;
-        font-style: normal;
-      }
-      body {
-        font-family: 'Pretendard-Regular', sans-serif;
-        letter-spacing: -0.07em;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Prevent default touch behavior
-    const preventDefault = (e) => e.preventDefault();
-    document.body.addEventListener('touchmove', preventDefault, { passive: false });
-
-    return () => {
-      document.head.removeChild(style);
-      document.body.removeEventListener('touchmove', preventDefault);
-    };
-  }, []);
 
   return (
     <div className="p-4 mx-auto" style={{ maxWidth: '740px' }}>
