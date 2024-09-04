@@ -1,0 +1,10 @@
+@import url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Pretendard-Regular', sans-serif;
+  letter-spacing: -0.07em;
+}
